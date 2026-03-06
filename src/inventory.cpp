@@ -134,12 +134,120 @@ void Inventory::cleanUp()
     int k = 0;
     for(int i = 0; i < rows; i++){
         for(int j = 0; j < cols; j++){
-            items[i][j] = temp[k];
-            k++;
-            if(k >= temp.size()) return;
+            items[i][j] = (k < (int)temp.size()) ? temp[k++] : nullptr;
         }
     }
 }
+
+void Inventory::sortByRarity()
+{
+    std::vector<Item*> temp;
+    auto eachRarity = [&](Rarity r){
+        for(int i = 0; i < rows; i++){
+            for(int j = 0; j < cols; j++){
+                if(items[i][j] != nullptr){
+                    if(items[i][j]->getRarity() == r && items[i][j]->getCategory() != "medkit"){
+                        temp.push_back(items[i][j]);
+                        items[i][j] = nullptr;
+                    }
+                }
+            }
+        }
+    };
+    eachRarity(unknown);
+    eachRarity(legendary);
+    eachRarity(epic);
+    eachRarity(rare);
+    eachRarity(uncommon);
+    eachRarity(common);
+
+
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            if(items[i][j] != nullptr && items[i][j]->getCategory() == "medkit"){
+                temp.push_back(items[i][j]);
+                items[i][j] = nullptr;
+            }
+        }
+    }
+
+    int k = 0;
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            items[i][j] = (k < (int)temp.size()) ? temp[k++] : nullptr;
+        }
+    }
+}
+
+void Inventory::sortByType()
+{
+    std::vector<Item*> temp;
+    auto eachType = [&](Type t){
+        for(int i = 0; i < rows; i++){
+            for(int j = 0; j < cols; j++){
+                if(items[i][j] != nullptr){
+                    if(items[i][j]->getType() == t && items[i][j]->getCategory() != "medkit"){
+                        temp.push_back(items[i][j]);
+                        items[i][j] = nullptr;
+                    }
+                }
+            }
+        }
+    };
+    eachType(unseen);
+    eachType(diamond);
+    eachType(gold);
+    eachType(iron);
+    eachType(stone);
+    eachType(wooden);
+
+
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            if(items[i][j] != nullptr && items[i][j]->getCategory() == "medkit"){
+                temp.push_back(items[i][j]);
+                items[i][j] = nullptr;
+            }
+        }
+    }
+
+    int k = 0;
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            items[i][j] = (k < (int)temp.size()) ? temp[k++] : nullptr;
+        }
+    }
+}
+
+void Inventory::filter()
+{
+    maskedItems.clear();
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            if(items[i][j] != nullptr && items[i][j]->getType() != diamond){
+                maskedItems[{i,j}] = items[i][j]->getName();
+                items[i][j]->setName(".");
+            }
+        }
+    }
+    filtered = true;
+}
+
+void Inventory::unfilter()
+{
+    for(auto& [pos, name] : maskedItems){
+        int i = pos.first;
+        int j = pos.second;
+        if(items[i][j] != nullptr){
+            items[i][j]->setName(name);
+        }
+    }
+    maskedItems.clear();
+    filtered = false;
+}
+
+
+
 int Inventory::levenshteinDistance(std::string firstString, std::string secondString)
 {
     int firstLength = firstString.length();

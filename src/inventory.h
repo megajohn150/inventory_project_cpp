@@ -2,14 +2,17 @@
 #define INVENTORY_H
 #include "gridbase.h"
 #include "equipment.h"
+#include <map>
+
 
 class Inventory : public GridBase
 {
 private:
     bool hasSmallBackpack = false;
     bool hasLargeBackpack = false;
-
+    std::map<std::pair<int,int>, std::string> maskedItems;
     void expandCols(int addCols);
+    bool filtered = false;
 
 public:
     Inventory();
@@ -25,7 +28,12 @@ public:
     void display() override { display(nullptr, false); }
     void clearInv(Equipment* eq);
     void cleanUp();
+    void sortByRarity();
+    void sortByType();
+    void filter();
+    void unfilter();
     bool invNotEmpCheckup();
+    bool isFiltered() const { return filtered; }
 };
 
 #endif // INVENTORY_H

@@ -123,6 +123,26 @@ Game::Game() {
 
     filters.add("Search item");
     filters.add("Clean up");
+    filters.add("Sort by rarity");
+    filters.add("Sort by type");
+    filters.add("filter");
+    // rarities.add("Descending");
+    // rarities.add("Common");
+    // rarities.add("Uncommon");
+    // rarities.add("Rare");
+    // rarities.add("Epic");
+    // rarities.add("Legendary");
+    // rarities.add("Unknown");
+    // rarities.add("Ascending");
+
+    // types.add(("Descending"));
+    // types.add(("Wooden"));
+    // types.add(("Stone"));
+    // types.add(("Iron"));
+    // types.add(("Gold"));
+    // types.add(("Diamond"));
+    // types.add(("Unseen"));
+    // types.add(("Ascending"));
 
     shop->addItem(new Item("Sword",   15, "close range weapons"));
     shop->addItem(new Item("Katana",  35, "close range weapons"));
@@ -394,8 +414,8 @@ void Game::play() {
 
             userInput = int(getSingleChar());
             switch (userInput) {
-            case 'w': menu.setCurrentItem(menu.getCurrentItem() - 1); break;
-            case 's': menu.setCurrentItem(menu.getCurrentItem() + 1); break;
+            case 'w': menu.move("up"); break;
+            case 's': menu.move("down"); break;
             case 10: case 13: {
                 int ci = menu.getCurrentItem();
                 auto item = menu.getNames()[ci];
@@ -1028,7 +1048,8 @@ void Game::play() {
                     player->getInv()->display(player->getEquip(), equipMode);
                     std::cout << "~~~~~~~~~~~~~~~~~~~\n";
                 };
-
+                bool inRarities = false;
+                bool inTypes = false;
                 bool inFilters = true;
                 while(inFilters){
                     displayInv();
@@ -1055,13 +1076,76 @@ void Game::play() {
                                 player->getInv()->setCurrentCol(givenCol);
                                 equipMode = false;
                             }
-                        } else {
+                            inFilters = false;
+                        }
+                        else if(filters.getCurrentItem() == 1) {
                             lastEvent = "";
                             auto inv = player->getInv();
-                            lastEvent = inv->invNotEmpCheckup() ? "" : "You can't use clean up, inventory is empty!";
+                            lastEvent = inv->invNotEmpCheckup() ? "" : "You can't clean up your inventory because its empty!";
                             if(inv->invNotEmpCheckup()) inv->cleanUp();
+                            inFilters = false;
                         }
-                        inFilters = false;
+                        else if(filters.getCurrentItem() == 2){
+                            // inRarities = true;
+                            // while(inRarities){
+                            //     displayInv();
+                            //     rarities.displayFilters();
+                            //     std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
+                            //     int u = int(getSingleChar());
+                            //     switch(u){
+                            //     case 'w': rarities.move("up");   break;
+                            //     case 's': rarities.move("down"); break;
+                            //     case 10: case 13:{
+
+                            //     }
+                            //     case KEY_BACK: inRarities = false; break;
+                            //     }
+                            // }
+                            lastEvent = "";
+                            auto inv = player->getInv();
+                            lastEvent = inv->invNotEmpCheckup() ? "" : "You can't sort items in your inventory because it's empty!";
+                            if(inv->invNotEmpCheckup()) inv->sortByRarity();
+                            inFilters = false;
+                        }
+                        else if(filters.getCurrentItem() == 3){
+                            // inTypes = true;
+                            // while(inTypes){
+                            //     displayInv();
+                            //     types.displayFilters();
+                            //     std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
+                            //     int u = int(getSingleChar());
+                            //     switch(u){
+                            //     case 'w': types.move("up");   break;
+                            //     case 's': types.move("down"); break;
+                            //     case 10: case 13:{
+
+                            //     }
+                            //     case KEY_BACK: inTypes = false; break;
+                            //     }
+                            // }
+                            lastEvent = "";
+                            auto inv = player->getInv();
+                            lastEvent = inv->invNotEmpCheckup() ? "" : "You can't sort items in your inventory because it's empty!";
+                            if(inv->invNotEmpCheckup()) inv->sortByType();
+                            inFilters = false;
+                        }
+                        else{
+                            lastEvent = "";
+                            auto inv = player->getInv();
+                            if(!inv->invNotEmpCheckup()){
+                                lastEvent = "You can't filter items in your inventory because it's empty!";
+                            } else {
+                                if(inv->isFiltered()){
+                                    inv->unfilter();
+                                    lastEvent = "Filter removed.";
+                                } else {
+                                    inv->filter();
+                                    lastEvent = "Showing diamond items only.";
+                                }
+                            }
+                            inFilters = false;
+                        }
+
                         break;
                     }
                     case KEY_BACK: inFilters = false; break;

@@ -24,6 +24,8 @@ private:
     GameState state;
     DisplayList menu;
     DisplayList filters;
+    DisplayList rarities;
+    DisplayList types;
 public:
     Game();
     ~Game();

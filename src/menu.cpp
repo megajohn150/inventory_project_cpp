@@ -1,6 +1,6 @@
 #include "menu.h"
 
-Menu::Menu() : GridBase(5, 1) {}
+Menu::Menu() : GridBase(7, 1) {}
 
 void Menu::display()
 {
@@ -15,6 +15,9 @@ void Menu::display()
 
         if(i == 2)
             std::cout << "\n~~~~~~~~~~~~~\n";
+        else if (i == 4){
+            std::cout << "\n~~~~~~~~~~~~~\n";
+        }
         else
             std::cout << "\n";
     }

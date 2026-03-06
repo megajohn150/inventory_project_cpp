@@ -15,7 +15,9 @@ enum GameState {
     STATE_PLAY_MEDKIT,
     STATE_PLAY,
     STATE_BOSS,
-    STATE_BOSS_COOLDOWN
+    STATE_BOSS_COOLDOWN,
+    STATE_SAVE,
+    STATE_LOAD
 };
 
 class Game
@@ -26,6 +28,7 @@ private:
     Shop* shop;
     Store* store;
     GameState state;
+    std::string saveLoadMSG;
 
 public:
     Game();
@@ -40,6 +43,8 @@ public:
     void setShop(Shop *newShop);
     Store *getStore() const;
     void setStore(Store *newStore);
+    bool saveGame(const std::string& filename);
+    bool loadGame(const std::string& filename);
 };
 
 #endif // GAME_H

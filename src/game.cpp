@@ -7,6 +7,8 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <fstream>
+#include "json.hpp"
 #ifdef _WIN32
 #include <conio.h>
 #else
@@ -75,6 +77,112 @@ struct Stats {
     int itemsBought   = 0;
 };
 
+static nlohmann::json serializeItem(Item* item) {
+    if (!item) return nullptr;
+    return {
+        {"name",       item->getName()},
+        {"price",      item->getPrice()},
+        {"category",   item->getCategory()},
+        {"rarity",     static_cast<int>(item->getRarity())},
+        {"type",       static_cast<int>(item->getType())},
+        {"durability", item->getDurability()}
+    };
+}
+
+static Item* deserializeItem(const nlohmann::json& j) {
+    if (j.is_null()) return nullptr;
+    Item* item = new Item(j["name"], j["price"], j["category"]);
+    item->setRarity(static_cast<Rarity>(j["rarity"].get<int>()));
+    item->setType(static_cast<Type>(j["type"].get<int>()));
+    item->setDurability(j["durability"]);
+    return item;
+}
+
+bool Game::saveGame(const std::string& filename) {
+    saveLoadMSG = "";
+    nlohmann::json j;
+    // Player fields
+    j["player"]["name"]  = player->getName();
+    j["player"]["money"] = player->getMoney();
+    j["player"]["hp"]    = player->getHp();
+    // Backpacks
+    j["player"]["hasSmallBackpack"] = player->getInv()->getHasSmallBackpack();
+    j["player"]["hasLargeBackpack"] = player->getInv()->getHasLargeBackpack();
+    // Inventory
+    j["player"]["inventory"] = nlohmann::json::array();
+    for (int i = 0; i < player->getInv()->getRows(); i++) {
+        for (int k = 0; k < player->getInv()->getCols(); k++) {
+            Item* item = player->getInv()->getItems()[i][k];
+            nlohmann::json slot;
+            slot["row"]  = i;
+            slot["col"]  = k;
+            slot["item"] = serializeItem(item);
+            j["player"]["inventory"].push_back(slot);
+        }
+    }
+    // Equipment
+    j["player"]["equipment"]["armor"]  = serializeItem(player->getEquip()->getArmor());
+    j["player"]["equipment"]["melee"]  = serializeItem(player->getEquip()->getMelee());
+    j["player"]["equipment"]["ranged"] = serializeItem(player->getEquip()->getRanged());
+
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << j.dump(4);
+        saveLoadMSG = "Saved successfully!\n";
+        return true;
+    }
+    else{
+        saveLoadMSG = "Unable to write save, file not found!\n";
+        return false;
+    }
+}
+
+bool Game::loadGame(const std::string& filename){
+    saveLoadMSG = "";
+    std::ifstream file(filename);
+    if(!file.is_open()){
+        saveLoadMSG = "Something went wrong, file wasn't saved!\n";
+        return false;
+    }
+    nlohmann::json j;
+    try{
+        file >> j;
+    }
+    catch(...){
+        saveLoadMSG = "Unable to load game! File is corrupted!\n";
+        return false;
+    }
+    // Restore player fields
+    player->setName(j["player"]["name"]);
+    player->setMoney(j["player"]["money"]);
+    player->setHp(j["player"]["hp"]);
+    // Clear current state
+    player->getInv()->clearInv(player->getEquip());
+    // Restore backpacks
+    if (j["player"]["hasSmallBackpack"].get<bool>())
+        player->getInv()->addSmallBackpack();
+    if (j["player"]["hasLargeBackpack"].get<bool>())
+        player->getInv()->addLargeBackpack();
+     // Restore inventory
+    for (auto& slot : j["player"]["inventory"]) {
+        if (!slot["item"].is_null()) {
+            Item* item = deserializeItem(slot["item"]);
+            int row = slot["row"];
+            int col = slot["col"];
+            player->getInv()->getItems()[row][col] = item;
+        }
+    }
+    // Restore equipment
+    if (!j["player"]["equipment"]["armor"].is_null())
+        player->getEquip()->equipItem(deserializeItem(j["player"]["equipment"]["armor"]));
+    if (!j["player"]["equipment"]["melee"].is_null())
+        player->getEquip()->equipItem(deserializeItem(j["player"]["equipment"]["melee"]));
+    if (!j["player"]["equipment"]["ranged"].is_null())
+        player->getEquip()->equipItem(deserializeItem(j["player"]["equipment"]["ranged"]));
+    saveLoadMSG = "Welcome back, " + player->getName();
+    return true;
+}
+
 static void displayStats(const Stats& s) {
     std::cout << "<===== Statistics =====>\n\n";
     std::cout << " Clicks in play      : " << s.clicks        << "\n";
@@ -127,6 +235,8 @@ Game::Game() {
     menu->addItem(new Item("Store",     1, "game"));
     menu->addItem(new Item("Map",       1, "game"));
     menu->addItem(new Item("Guide",     1, "game"));
+    menu->addItem(new Item("Save game", 1, "game"));
+    menu->addItem(new Item("Load game", 1, "game"));
 
     store->addItem(new Item("Buy",  1, "game"));
     store->addItem(new Item("Sell", 1, "game"));
@@ -405,7 +515,9 @@ void Game::play() {
                 else if (sel == "Store")     state = STATE_STORE;
                 else if (sel == "Play")      state = STATE_PLAY;
                 else if (sel == "Map")       state = STATE_MAP;
-                else                         state = STATE_NAVIGATION;
+                else if (sel == "Guide")     state = STATE_NAVIGATION;
+                else if (sel == "Save game") state = STATE_SAVE;
+                else                         state = STATE_LOAD;
                 break;
             }
             case KEY_BACK: {
@@ -1553,6 +1665,27 @@ void Game::play() {
 
             userInput = int(getSingleChar());
             switch (userInput) {
+            case KEY_BACK: state = STATE_MENU; break;
+            }
+        }
+        // ===================== SAVE =====================
+        else if (state == STATE_SAVE) {
+            system(CLEAR);
+            saveGame("../../saves/savegame.json");
+            std::cout << saveLoadMSG << "\n";
+            userInput = int(getSingleChar());
+            switch(userInput){
+            case KEY_BACK: state = STATE_MENU; break;
+            }
+        }
+
+        // ===================== LOAD =====================
+        else if (state == STATE_LOAD) {
+            system(CLEAR);
+            loadGame("../../saves/savegame.json");
+            std::cout << saveLoadMSG << "\n";
+            userInput = int(getSingleChar());
+            switch(userInput){
             case KEY_BACK: state = STATE_MENU; break;
             }
         }

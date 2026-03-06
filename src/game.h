@@ -3,6 +3,23 @@
 #include "player.h"
 #include "shop.h"
 #include "displaylist.h"
+
+struct Stats {
+    int clicks        = 0;
+    int zombiesKilled = 0;
+    int zombiesHit    = 0;
+    int coinsEarned   = 0;
+    int coinsStolen   = 0;
+    int hpHealed      = 0;
+    int medkitsUsed   = 0;
+    int itemsBroken   = 0;
+    int upgrades      = 0;
+    int repairs       = 0;
+    int itemsSold     = 0;
+    int itemsBought   = 0;
+    int bossFightsWon = 0;
+};
+
 enum GameState {
     STATE_MENU,
     STATE_INVENTORY,
@@ -29,6 +46,7 @@ private:
     DisplayList types;
     DisplayList saves;
     std::string saveLoadMSG;
+    Stats stats;
 public:
     Game();
     ~Game();

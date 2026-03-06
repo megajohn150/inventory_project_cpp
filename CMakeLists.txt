@@ -17,7 +17,6 @@ add_executable(inventory src/main.cpp
     src/equipment.h src/equipment.cpp
     src/displaylist.h src/displaylist.cpp
 )
-
 target_include_directories(inventory PRIVATE include)
 
 include(GNUInstallDirs)

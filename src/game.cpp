@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+
 int kbhit() {
     struct termios oldt, newt;
     int ch;
@@ -56,20 +57,6 @@ const std::string BOLD    = "\033[1m";
 const std::string RESET   = "\033[0m";
 }
 
-struct Stats {
-    int clicks        = 0;
-    int zombiesKilled = 0;
-    int zombiesHit    = 0;
-    int coinsEarned   = 0;
-    int coinsStolen   = 0;
-    int hpHealed      = 0;
-    int medkitsUsed   = 0;
-    int itemsBroken   = 0;
-    int upgrades      = 0;
-    int repairs       = 0;
-    int itemsSold     = 0;
-    int itemsBought   = 0;
-};
 
 static nlohmann::json serializeItem(Item* item) {
     if (!item) return nullptr;
@@ -79,7 +66,8 @@ static nlohmann::json serializeItem(Item* item) {
         {"category",   item->getCategory()},
         {"rarity",     static_cast<int>(item->getRarity())},
         {"type",       static_cast<int>(item->getType())},
-        {"durability", item->getDurability()}
+        {"durability", item->getDurability()},
+        {"stock",      item->getStock()}
     };
 }
 
@@ -89,6 +77,7 @@ static Item* deserializeItem(const nlohmann::json& j) {
     item->setRarity(static_cast<Rarity>(j["rarity"].get<int>()));
     item->setType(static_cast<Type>(j["type"].get<int>()));
     item->setDurability(j["durability"]);
+    if (j.contains("stock")) item->setStock(j["stock"]);
     return item;
 }
 
@@ -114,6 +103,28 @@ bool Game::saveGame(const std::string& filename) {
             j["player"]["inventory"].push_back(slot);
         }
     }
+    // Shop stock
+    j["shop"] = nlohmann::json::array();
+    for (int i = 0; i < shop->getRows(); i++) {
+        Item* it = shop->getItems()[i][0];
+        if (it) {
+            j["shop"].push_back({{"name", it->getName()}, {"stock", it->getStock()}});
+        }
+    }
+    // Stats
+    j["stats"]["clicks"]        = stats.clicks;
+    j["stats"]["zombiesKilled"] = stats.zombiesKilled;
+    j["stats"]["zombiesHit"]    = stats.zombiesHit;
+    j["stats"]["coinsEarned"]   = stats.coinsEarned;
+    j["stats"]["coinsStolen"]   = stats.coinsStolen;
+    j["stats"]["hpHealed"]      = stats.hpHealed;
+    j["stats"]["medkitsUsed"]   = stats.medkitsUsed;
+    j["stats"]["itemsBroken"]   = stats.itemsBroken;
+    j["stats"]["upgrades"]      = stats.upgrades;
+    j["stats"]["repairs"]       = stats.repairs;
+    j["stats"]["itemsSold"]     = stats.itemsSold;
+    j["stats"]["itemsBought"]   = stats.itemsBought;
+    j["stats"]["bossFightsWon"] = stats.bossFightsWon;
     // Equipment
     j["player"]["equipment"]["armor"]  = serializeItem(player->getEquip()->getArmor());
     j["player"]["equipment"]["melee"]  = serializeItem(player->getEquip()->getMelee());
@@ -166,6 +177,36 @@ bool Game::loadGame(const std::string& filename){
             player->getInv()->getItems()[row][col] = item;
         }
     }
+    // Restore shop stock
+    if (j.contains("shop")) {
+        for (auto& entry : j["shop"]) {
+            std::string name = entry["name"];
+            int stock = entry["stock"];
+            for (int i = 0; i < shop->getRows(); i++) {
+                Item* it = shop->getItems()[i][0];
+                if (it && it->getName() == name) {
+                    it->setStock(stock);
+                    break;
+                }
+            }
+        }
+    }
+    // Restore stats
+    if (j.contains("stats")) {
+        stats.clicks        = j["stats"]["clicks"];
+        stats.zombiesKilled = j["stats"]["zombiesKilled"];
+        stats.zombiesHit    = j["stats"]["zombiesHit"];
+        stats.coinsEarned   = j["stats"]["coinsEarned"];
+        stats.coinsStolen   = j["stats"]["coinsStolen"];
+        stats.hpHealed      = j["stats"]["hpHealed"];
+        stats.medkitsUsed   = j["stats"]["medkitsUsed"];
+        stats.itemsBroken   = j["stats"]["itemsBroken"];
+        stats.upgrades      = j["stats"]["upgrades"];
+        stats.repairs       = j["stats"]["repairs"];
+        stats.itemsSold     = j["stats"]["itemsSold"];
+        stats.itemsBought   = j["stats"]["itemsBought"];
+        stats.bossFightsWon = j["stats"].value("bossFightsWon", 0);
+    }
     // Restore equipment
     if (!j["player"]["equipment"]["armor"].is_null())
         player->getEquip()->equipItem(deserializeItem(j["player"]["equipment"]["armor"]));
@@ -182,6 +223,7 @@ static void displayStats(const Stats& s) {
     std::cout << " Clicks in play      : " << s.clicks        << "\n";
     std::cout << " Zombies scared off  : " << Color::GREEN  << s.zombiesKilled << Color::RESET << "\n";
     std::cout << " Zombie attacks      : " << Color::RED    << s.zombiesHit    << Color::RESET << "\n";
+    std::cout << " Boss fights won     : " << Color::YELLOW << s.bossFightsWon << Color::RESET << "\n";
     std::cout << " Coins earned        : " << Color::YELLOW << s.coinsEarned   << Color::RESET << "\n";
     std::cout << " Coins stolen        : " << Color::RED    << s.coinsStolen   << Color::RESET << "\n";
     std::cout << " HP healed           : " << Color::GREEN  << s.hpHealed      << Color::RESET << "\n";
@@ -510,7 +552,6 @@ void Game::play() {
     std::string medkitMsg  = "";
     std::string secretCode = "";
     std::string lastEvent  = "";
-    Stats stats;
     // bool bossActive    = false;
     int  bossClicks    = 0;
     auto bossStartTime = std::chrono::steady_clock::now();
@@ -887,6 +928,7 @@ void Game::play() {
                 player->setMoney(player->getMoney() + coinsWon);
 
                 stats.coinsEarned += coinsWon;
+                stats.bossFightsWon++;
                 lastEvent = Color::YELLOW + Color::BOLD + "BOSS defeated! You earned +"
                             + std::to_string(coinsWon) + " coins!" + Color::RESET;
 
@@ -950,6 +992,7 @@ void Game::play() {
             }
         }
         // ===================== INVENTORY =====================
+
         else if (state == STATE_INVENTORY) {
             std::cout << "<===== " << player->getName() << "'s inventory =====>\n\n";
             std::cout << "Balance: " << player->getMoney()

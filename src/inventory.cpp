@@ -72,8 +72,10 @@ void Inventory::display(Equipment* eq, bool equipMode)
 
             if (items[i][j] == nullptr)
                 std::cout << " ";
-            else
-                std::cout << char(std::toupper(items[i][j]->getName()[0]));
+            else {
+                bool masked = maskedItems.count({i, j}) > 0;
+                std::cout << (masked ? '.' : char(std::toupper(items[i][j]->getName()[0])));
+            }
 
             if (selected) std::cout << "]<";
             else          std::cout << "] ";
@@ -219,14 +221,38 @@ void Inventory::sortByType()
     }
 }
 
-void Inventory::filterByRarity(Rarity)
+void Inventory::applyFilters()
 {
+    maskedItems.clear();
 
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            if(items[i][j] == nullptr) continue;
+
+            bool hide = false;
+            if(filteredType   && items[i][j]->getType()   != activeTypeFilter)   hide = true;
+            if(filteredRarity && items[i][j]->getRarity() != activeRarityFilter) hide = true;
+
+            if(hide){
+                maskedItems[{i,j}] = items[i][j]->getName();
+            }
+        }
+    }
+    filtered = filteredType || filteredRarity;
 }
 
-void Inventory::filterByType(Type)
+void Inventory::filterByType(Type t)
 {
+    filteredType     = true;
+    activeTypeFilter = t;
+    applyFilters();
+}
 
+void Inventory::filterByRarity(Rarity r)
+{
+    filteredRarity     = true;
+    activeRarityFilter = r;
+    applyFilters();
 }
 
 void Inventory::filter()
@@ -236,7 +262,6 @@ void Inventory::filter()
         for(int j = 0; j < cols; j++){
             if(items[i][j] != nullptr && items[i][j]->getType() != diamond){
                 maskedItems[{i,j}] = items[i][j]->getName();
-                items[i][j]->setName(".");
             }
         }
     }
@@ -245,49 +270,34 @@ void Inventory::filter()
 
 void Inventory::unfilter()
 {
-    for(auto& [pos, name] : maskedItems){
-        int i = pos.first;
-        int j = pos.second;
-        if(items[i][j] != nullptr){
-            items[i][j]->setName(name);
-        }
-    }
     maskedItems.clear();
-    filtered = false;
+    filtered = filteredType = filteredRarity = false;
 }
-
-
 
 int Inventory::levenshteinDistance(std::string firstString, std::string secondString)
 {
     int firstLength = firstString.length();
     int secondLength = secondString.length();
 
-    // Create a 2D table to store edit distances
     std::vector<std::vector<int>> editDistanceTable(firstLength + 1, std::vector<int>(secondLength + 1));
 
-    // Initialize first column (deletions from firstString)
     for (int row = 0; row <= firstLength; row++) {
         editDistanceTable[row][0] = row;
     }
 
-    // Initialize first row (insertions to match secondString)
     for (int col = 0; col <= secondLength; col++) {
         editDistanceTable[0][col] = col;
     }
 
-    // Fill the table using dynamic programming
     for (int row = 1; row <= firstLength; row++) {
         for (int col = 1; col <= secondLength; col++) {
             if (tolower(firstString[row - 1]) == tolower(secondString[col - 1])) {
-                // Characters match - no operation needed
                 editDistanceTable[row][col] = editDistanceTable[row - 1][col - 1];
             } else {
-                // Take minimum of: delete, insert, or substitute
                 editDistanceTable[row][col] = 1 + std::min({
-                                                  editDistanceTable[row - 1][col],     // deletion
-                                                  editDistanceTable[row][col - 1],     // insertion
-                                                  editDistanceTable[row - 1][col - 1]  // substitution
+                                                  editDistanceTable[row - 1][col],
+                                                  editDistanceTable[row][col - 1],
+                                                  editDistanceTable[row - 1][col - 1]
                                               });
             }
         }
@@ -299,7 +309,6 @@ int Inventory::levenshteinDistance(std::string firstString, std::string secondSt
 std::pair<int, int> Inventory::searchNames(std::string target)
 {
     std::vector<std::tuple<int, int, std::string, int>> results;
-
 
     std::string normalizedTarget = target;
     std::transform(normalizedTarget.begin(), normalizedTarget.end(), normalizedTarget.begin(), ::tolower);
@@ -326,7 +335,6 @@ std::pair<int, int> Inventory::searchNames(std::string target)
             int bestDist = INT_MAX;
 
             if (twoWords) {
-
                 std::string t0 = targetWords[0];
                 std::string t1 = targetWords[1];
 
@@ -338,7 +346,6 @@ std::pair<int, int> Inventory::searchNames(std::string target)
                 int threshold1 = std::max(1, maxLen1 / 4);
                 int distName = levenshteinDistance(t1, normName);
 
-
                 if (normType.find(t0) != std::string::npos) distType = 0;
                 if (normName.find(t1) != std::string::npos) distName = 0;
 
@@ -346,7 +353,6 @@ std::pair<int, int> Inventory::searchNames(std::string target)
                     bestDist = distType + distName;
                 }
             } else {
-
                 std::string t0 = targetWords.empty() ? normalizedTarget : targetWords[0];
 
                 int maxLenName = std::max((int)t0.length(), (int)normName.length());

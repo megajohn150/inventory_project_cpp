@@ -168,7 +168,7 @@ bool Game::loadGame(const std::string& filename){
         player->getInv()->addSmallBackpack();
     if (j["player"]["hasLargeBackpack"].get<bool>())
         player->getInv()->addLargeBackpack();
-     // Restore inventory
+    // Restore inventory
     for (auto& slot : j["player"]["inventory"]) {
         if (!slot["item"].is_null()) {
             Item* item = deserializeItem(slot["item"]);
@@ -280,24 +280,23 @@ Game::Game() {
     filters.add("Clean up");
     filters.add("Sort by rarity");
     filters.add("Sort by type");
-    filters.add("filter");
-    // rarities.add("Descending");
-    // rarities.add("Common");
-    // rarities.add("Uncommon");
-    // rarities.add("Rare");
-    // rarities.add("Epic");
-    // rarities.add("Legendary");
-    // rarities.add("Unknown");
-    // rarities.add("Ascending");
+    filters.add("Filter by type");
+    filters.add("Filter by rarity");
+    filters.add("Clear filters");
 
-    // types.add(("Descending"));
-    // types.add(("Wooden"));
-    // types.add(("Stone"));
-    // types.add(("Iron"));
-    // types.add(("Gold"));
-    // types.add(("Diamond"));
-    // types.add(("Unseen"));
-    // types.add(("Ascending"));
+    rarities.add("Common");
+    rarities.add("Uncommon");
+    rarities.add("Rare");
+    rarities.add("Epic");
+    rarities.add("Legendary");
+    rarities.add("Unknown");
+
+    types.add("Wooden");
+    types.add("Stone");
+    types.add("Iron");
+    types.add("Gold");
+    types.add("Diamond");
+    types.add("Unseen");
 
     shop->addItem(new Item("Sword",   15, "close range weapons"));
     shop->addItem(new Item("Katana",  35, "close range weapons"));
@@ -1211,7 +1210,7 @@ void Game::play() {
                 bool inFilters = true;
                 while(inFilters){
                     displayInv();
-                    filters.displayFilters();
+                    filters.displayMenu();
                     std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
                     userInput = int(getSingleChar());
                     switch(userInput){
@@ -1244,21 +1243,6 @@ void Game::play() {
                             inFilters = false;
                         }
                         else if(filters.getCurrentItem() == 2){
-                            // inRarities = true;
-                            // while(inRarities){
-                            //     displayInv();
-                            //     rarities.displayFilters();
-                            //     std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
-                            //     int u = int(getSingleChar());
-                            //     switch(u){
-                            //     case 'w': rarities.move("up");   break;
-                            //     case 's': rarities.move("down"); break;
-                            //     case 10: case 13:{
-
-                            //     }
-                            //     case KEY_BACK: inRarities = false; break;
-                            //     }
-                            // }
                             lastEvent = "";
                             auto inv = player->getInv();
                             lastEvent = inv->invNotEmpCheckup() ? "" : "You can't sort items in your inventory because it's empty!";
@@ -1266,40 +1250,91 @@ void Game::play() {
                             inFilters = false;
                         }
                         else if(filters.getCurrentItem() == 3){
-                            // inTypes = true;
-                            // while(inTypes){
-                            //     displayInv();
-                            //     types.displayFilters();
-                            //     std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
-                            //     int u = int(getSingleChar());
-                            //     switch(u){
-                            //     case 'w': types.move("up");   break;
-                            //     case 's': types.move("down"); break;
-                            //     case 10: case 13:{
-
-                            //     }
-                            //     case KEY_BACK: inTypes = false; break;
-                            //     }
-                            // }
                             lastEvent = "";
                             auto inv = player->getInv();
                             lastEvent = inv->invNotEmpCheckup() ? "" : "You can't sort items in your inventory because it's empty!";
                             if(inv->invNotEmpCheckup()) inv->sortByType();
                             inFilters = false;
                         }
-                        else{
-                            lastEvent = "";
+                        else if(filters.getCurrentItem() == 4){
+                            // Filter by type submenu
                             auto inv = player->getInv();
                             if(!inv->invNotEmpCheckup()){
                                 lastEvent = "You can't filter items in your inventory because it's empty!";
-                            } else {
-                                if(inv->isFiltered()){
-                                    inv->unfilter();
-                                    lastEvent = "Filter removed.";
-                                } else {
-                                    inv->filter();
-                                    lastEvent = "Showing diamond items only.";
+                                inFilters = false;
+                                break;
+                            }
+                            inTypes = true;
+                            types.setCurrentItem(0);
+                            while(inTypes){
+                                displayInv();
+                                std::cout << "~~~~~~~~~~~~~~~~~~~\n";
+                                std::cout << "Filter by type:\n";
+                                types.displayFilters();
+                                std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
+                                int u = int(getSingleChar());
+                                switch(u){
+                                case 'w': types.move("up");   break;
+                                case 's': types.move("down"); break;
+                                case 10: case 13: {
+                                    static const Type typeMap[] = { wooden, stone, iron, gold, diamond, unseen };
+                                    static const std::string typeNames[] = { "Wooden","Stone","Iron","Gold","Diamond","Unseen" };
+                                    int ci2 = types.getCurrentItem();
+                                    inv->filterByType(typeMap[ci2]);
+                                    lastEvent = "Showing " + typeNames[ci2] + " items only.";
+                                    inTypes = false;
+                                    inFilters = false;
+                                    break;
                                 }
+                                case KEY_BACK: inTypes = false; break;
+                                }
+                            }
+                        }
+                        else if(filters.getCurrentItem() == 5){
+                            // Filter by rarity submenu
+                            auto inv = player->getInv();
+                            if(!inv->invNotEmpCheckup()){
+                                lastEvent = "You can't filter items in your inventory because it's empty!";
+                                inFilters = false;
+                                break;
+                            }
+                            inRarities = true;
+                            rarities.setCurrentItem(0);
+                            while(inRarities){
+                                displayInv();
+                                std::cout << "~~~~~~~~~~~~~~~~~~~\n";
+                                std::cout << "Filter by rarity:\n";
+                                rarities.displayFilters();
+                                std::cout << "\n[W/S] move  [ENTER] select  [BACKSPACE] back\n";
+                                int u = int(getSingleChar());
+                                switch(u){
+                                case 'w': rarities.move("up");   break;
+                                case 's': rarities.move("down"); break;
+                                case 10: case 13: {
+                                    static const Rarity rarityMap[] = { common, uncommon, rare, epic, legendary, unknown };
+                                    static const std::string rarityNames[] = { "Common","Uncommon","Rare","Epic","Legendary","Unknown" };
+                                    int ci2 = rarities.getCurrentItem();
+                                    inv->filterByRarity(rarityMap[ci2]);
+                                    lastEvent = "Showing " + rarityNames[ci2] + " items only.";
+                                    inRarities = false;
+                                    inFilters = false;
+                                    break;
+                                }
+                                case KEY_BACK: inRarities = false; break;
+                                }
+                            }
+                        }
+                        else{
+                            // Clear filters
+                            lastEvent = "";
+                            auto inv = player->getInv();
+                            if(!inv->invNotEmpCheckup()){
+                                lastEvent = "Inventory is empty!";
+                            } else if(inv->isFiltered()){
+                                inv->unfilter();
+                                lastEvent = "All filters cleared.";
+                            } else {
+                                lastEvent = "No active filters to clear.";
                             }
                             inFilters = false;
                         }
@@ -1534,7 +1569,7 @@ void Game::play() {
         else if (state == STATE_STORE_SHOP) {
             std::cout << "<===== Shop =====>\n\n";
             std::cout << "Your current balance: " << player->getMoney() << "\n";
-            shop->display();            
+            shop->display();
 
             userInput = int(getSingleChar());
             switch (userInput) {
@@ -1760,7 +1795,7 @@ void Game::play() {
             std::cout << "For better user experience, please run this game in bigger screen view\n\n";
             std::cout << "<===== Navigation guide =====>\n\n";
             std::cout << "Movement:\n W, S, A, D or arrow keys\n~~~~~~~~~~~~~\n";
-            std::cout << "Inventory functions:\n tab - change select\n i   - toggle info\n v   - toggle stats\n p   - weapon upgrade\n f   - search inventory\n r   - repair item\n e   - equip/unequip item\n u   - use medkit\n~~~~~~~~~~~~~\n";
+            std::cout << "Inventory functions:\n tab - change select\n i   - toggle info\n v   - toggle stats\n p   - weapon upgrade\n f   - filters\n r   - repair item\n e   - equip/unequip item\n u   - use medkit\n~~~~~~~~~~~~~\n";
             std::cout << "Store functions:\n p - toggle price & stock\n b - buy\n s - sell\n\n";
             std::cout << "<===== Upgrade prices =====>\n\n";
             std::cout << " Wooden -> Stone   - 20\n";

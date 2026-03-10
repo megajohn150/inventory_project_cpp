@@ -14,6 +14,13 @@ private:
     void expandCols(int addCols);
     bool filtered = false;
 
+    bool filteredType   = false;
+    bool filteredRarity = false;
+    Type   activeTypeFilter;
+    Rarity activeRarityFilter;
+
+    void applyFilters();
+
 public:
     Inventory();
     int levenshteinDistance(std::string firstString, std::string secondString);
@@ -23,6 +30,7 @@ public:
 
     bool getHasSmallBackpack() const { return hasSmallBackpack; }
     bool getHasLargeBackpack() const { return hasLargeBackpack; }
+    const std::map<std::pair<int,int>, std::string>& getMaskedItems() const { return maskedItems; }
 
     void display(Equipment* eq = nullptr, bool equipMode = false);
     void display() override { display(nullptr, false); }
@@ -31,11 +39,14 @@ public:
     void sortByRarity();
     void sortByType();
 
-    void filterByRarity(enum Rarity);
-    void filterByType(enum Type);
+    void filterByRarity(Rarity r);
+    void filterByType(Type t);
 
     void filter();
     void unfilter();
+
+    bool getFilteredType()   const { return filteredType; }
+    bool getFilteredRarity() const { return filteredRarity; }
 
     bool invNotEmpCheckup();
     bool isFiltered() const { return filtered; }

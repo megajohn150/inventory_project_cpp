@@ -11,10 +11,9 @@ int main() {
 #endif
     ma_engine engine;
     ma_engine_init(NULL, &engine);
-    ma_engine_play_sound(&engine, "../../music/music.mp3", NULL);
+    ma_engine_play_sound(&engine, "../music/music.mp3", NULL);
     Game game;
-    game.setPlayerName();
-    game.play();
+    game.startGame();
     ma_engine_uninit(&engine);
     return 0;
 }

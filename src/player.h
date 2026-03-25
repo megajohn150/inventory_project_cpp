@@ -12,10 +12,10 @@ private:
     int hp;
     Inventory* inv;
     Equipment* equip;
+    std::string diff;
 
 public:
     Player();
-    Player(std::string name);
     ~Player();
 
 
@@ -33,6 +33,8 @@ public:
     void       setInv(Inventory* newInv);
     Inventory* getInv()   const;
     Equipment* getEquip() const;
+    std::string getDiff() const;
+    void setDiff(const std::string &newDiff);
 };
 
 #endif // PLAYER_H

@@ -6,7 +6,7 @@
 
 class DisplayList
 {
-private:
+protected:
     std::vector<std::string> names;
     int currentItem;
 public:
@@ -18,9 +18,11 @@ public:
     std::vector<std::string> getNames() const;
     void setNames(const std::vector<std::string> &newNames);
     void add(std::string name);
-    void displayMenu();
+    void displayMenu(const std::string& playerName, const std::string& difficulty);
     void displayFilters();
+    void displayDiff();
     void move(std::string dir);
+    std::string getCurrentItemName();
 };
 
 #endif // DISPLAYLIST_H

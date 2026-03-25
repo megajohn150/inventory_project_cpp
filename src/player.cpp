@@ -1,5 +1,15 @@
 #include "player.h"
 
+std::string Player::getDiff() const
+{
+    return diff;
+}
+
+void Player::setDiff(const std::string &newDiff)
+{
+    diff = newDiff;
+}
+
 Player::Player()
 {
     this->name = "John";
@@ -7,16 +17,7 @@ Player::Player()
     this->hp = 100;
     this->inv = new Inventory();
     this->equip = new Equipment();
-    inv->addItem(new Item("Sword", 15, "close range weapons"));
-}
-
-Player::Player(std::string name)
-{
-    this->name = name;
-    this->money = 0;
-    this->hp = 100;
-    this->inv = new Inventory();
-    this->equip = new Equipment();
+    this->diff = "";
     inv->addItem(new Item("Sword", 15, "close range weapons"));
 }
 

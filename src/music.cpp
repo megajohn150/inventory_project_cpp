@@ -89,12 +89,30 @@ void Music::display(){
     std::cout << Color::BOLD << Color::CYAN << "╔═════════════════════════╗\n";
     std::cout << "║          " << Color::RESET << Color::BOLD <<  "MUSIC          " << Color::CYAN <<"║\n";
     std::cout << "╚═════════════════════════╝\n" << Color::RESET;
-    std::cout << Color::RESET <<" Currently playing: " << Color::BOLD<< Color::YELLOW <<names[currentlyPlaying];
-    std::cout << Color::RESET << Color::GRAY
-              << (playing
-                      ? "   " + Color::YELLOW + "▐▐  " + Color::GRAY + "[PLAYING]"
-                      : "    " + Color::YELLOW + Color::BOLD + "▶  " + Color::RESET + Color::GRAY + "[PAUSED]")
+
+    // ==== FIXED LINE ====
+    std::string name = names[currentlyPlaying];
+
+    std::string status = playing
+                             ? Color::YELLOW + std::string("▐▐  ") + Color::GRAY + "[PLAYING]"
+                             : Color::YELLOW + std::string(" ▶  ") + Color::GRAY + "[PAUSED]";
+
+    const int totalWidth = 53;
+
+    int baseLen = 19 + name.length();
+    int statusLen = 12;
+
+    int spaces = totalWidth - baseLen - statusLen;
+    if (spaces < 1) spaces = 1;
+
+    std::cout << Color::RESET
+              << " Currently playing: "
+              << Color::BOLD << Color::YELLOW << name
+              << Color::RESET
+              << repeat(" ", spaces)
+              << status
               << Color::RESET << std::endl;
+
     std::cout << Color::RESET << Color::GRAY << " ─────────────────────────────\n\n" <<Color::RESET;
 
     for(int i = 0; i < names.size(); i++){
@@ -139,8 +157,12 @@ void Music::display(){
 
 std::string Music::getPath(int id) {
     switch(id) {
-    case 0: return "../music/chryzantemy.mp3";
-    case 1: return "../music/drinkup.mp3";
+    case 0: return "../music/ancientharp.mp3";
+    case 1: return "../music/castleexploration.mp3";
+    case 2: return "../music/easytravel.mp3";
+    case 3: return "../music/fantasyexploration.mp3";
+    case 4: return "../music/habitat.mp3";
+    case 5: return "../music/smoothwaters.mp3";
     default: return "../music/music.mp3";
     }
 }

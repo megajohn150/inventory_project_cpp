@@ -286,12 +286,12 @@ Game::Game() {
     menu.add("Music");
     menu.add("Save & Load");
 
-    music.add("Chryzantemy Złociste");
-    music.add("Drink Up, There's More!");
-    music.add("Music 3");
-    music.add("Music 4");
-    music.add("Music 5");
-    music.add("Music 6");
+    music.add("Ancient harp");
+    music.add("Castle exploration");
+    music.add("Easy travel");
+    music.add("Fantasy exploration");
+    music.add("Habitat");
+    music.add("Smooth waters");
 
     saves.add("Save game");
     saves.add("Load game");
@@ -484,11 +484,14 @@ static int calculateSellPrice(Item* item) {
 }
 
 static void displayPlayHeader(Player* player, Item* activeWeapon, const std::string& lastEvent) {
-    std::cout << "<===== Play =====>\n\n";
+    std::cout << Color::CYAN  << Color::BOLD<< "╔══════════════════════════╗\n";
+    std::cout << "║     "<< Color::RESET << Color::BOLD <<"PLAY & EARN MONEY"<<Color::RESET << Color::CYAN << Color::BOLD <<"    ║\n";
+    std::cout << "╚══════════════════════════╝\n"<< Color::RESET;
+    std::cout << Color::DARKGRAY << " ──────────────────────────\n\n" <<Color::RESET;
 
     if (activeWeapon) {
         std::string slot = (activeWeapon == player->getEquip()->getMelee()) ? "melee" : "ranged";
-        std::cout << "Active weapon [" << slot << "]: "
+        std::cout << " Active weapon [" << slot << "]: "
                   << activeWeapon->getTypeString() << " " << activeWeapon->getName()
                   << " (" << rarityColor(activeWeapon->getRarity())
                   << activeWeapon->getRarityString() << Color::RESET << ")"
@@ -496,22 +499,22 @@ static void displayPlayHeader(Player* player, Item* activeWeapon, const std::str
                   << durabilityColor(activeWeapon->getDurability())
                   << activeWeapon->getDurability() << Color::RESET << "/100\n";
     } else {
-        std::cout << "Active weapon: none\n";
+        std::cout << " Active weapon: none\n";
     }
 
     Item* armor = player->getEquip()->getArmor();
     if (armor) {
-        std::cout << "Armor - Durability: "
+        std::cout << " Armor - Durability: "
                   << durabilityColor(armor->getDurability())
                   << armor->getDurability() << Color::RESET << "/100\n";
     } else {
-        std::cout << "Armor: none\n";
+        std::cout << " Armor: none\n";
     }
 
-    std::cout << "Balance: " << player->getMoney()
+    std::cout << " Balance: " << player->getMoney()
               << " | Health points: " << hpColor(player->getHp())
               << player->getHp() << Color::RESET << "\n\n";
-    std::cout << "Click to fight!!"<<Color::GRAY << "[H] use medkit\n" << Color::RESET;
+    std::cout << " Click to fight!!"<<Color::GRAY << "\n\n [H] use medkit\n" << Color::RESET;
 
     if (!lastEvent.empty())
         std::cout << "\n" << lastEvent << "\n";
@@ -896,7 +899,7 @@ bool Game::state_play_medkit() {
         );
     displayPlayHeader(player, activeWeapon, lastEvent);
 
-    std::cout << "\n~~~~~~~~~~~~~~~~~~~\n";
+    std::cout << Color::DARKGRAY << " ────────────────────────────\n\n" <<Color::RESET;
     std::cout << "FIRST-AID KITS\n\n";
 
     struct MedEntry {
@@ -1239,15 +1242,15 @@ bool Game::state_inventory() {
 
     std::cout << "\n" << Color::GRAY;
     if (equipMode) {
-        std::cout << " [TAB] inventory  [A/D] move  [E] unequip  [I] info  [P] upgrade  [R] repair  [F] filters etc.  [V] stats\n";
+        std::cout << " [TAB] inventory  [A/D] move  [E] unequip  [I] info  [P] upgrade  [R] repair  [F] filters etc  [M] move  [V] stats\n";
     } else {
         auto hintItem = player->getInv()->getItemOnSelectedRC(
             player->getInv()->getCurrentRow(),
             player->getInv()->getCurrentCol());
         if (hintItem && hintItem->getCategory() == "medkit") {
-            std::cout << " [TAB] equipment  [WASD] move  [I] info  [U] use  [F] search inventory  [V] stats\n";
+            std::cout << " [TAB] equipment  [WASD] move  [I] info  [U] use  [F] filters etc  [M] move  [V] stats\n";
         } else {
-            std::cout << " [TAB] equipment  [WASD] move  [E] equip  [I] info  [P] upgrade  [R] repair  [F] filters etc.  [V] stats\n";
+            std::cout << " [TAB] equipment  [WASD] move  [E] equip  [I] info  [P] upgrade  [R] repair  [F] filters etc  [M] move  [V] stats\n";
         }
     }
     std::cout << Color::RESET;
@@ -1528,8 +1531,6 @@ bool Game::state_inventory() {
 
             std::cout << Color::DARKGRAY << " ───────────────────────────\n" <<Color::RESET;
 
-            int  curRow     = playerInv->getCurrentRow();
-            int  curCol     = playerInv->getCurrentCol();
             std::string realName = grabbed->getName();
             grabbed->setName(".");
             playerInv->display(player->getEquip(), false);
@@ -1538,8 +1539,8 @@ bool Game::state_inventory() {
             std::cout<< Color::GRAY << "\n [WASD] move  [M] drop\n" << Color::RESET;
 
             int mv = int(getSingleChar());
-            curRow = playerInv->getCurrentRow();
-            curCol = playerInv->getCurrentCol();
+            int curRow = playerInv->getCurrentRow();
+            int curCol = playerInv->getCurrentCol();
 
             if (playerInv->getItemOnSelectedRC(curRow, curCol) != grabbed) {
                 bool found = false;
@@ -1554,7 +1555,7 @@ bool Game::state_inventory() {
                         }
                     }
                 }
-                if (!found) { movingItem = false; break; }
+                if (!found) { break; }
             }
 
             switch (mv) {

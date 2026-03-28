@@ -1,5 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
+
 #include "player.h"
 #include "shop.h"
 #include "displaylist.h"
@@ -51,6 +52,7 @@ private:
     DisplayList saves;
     DisplayList difficulty;
     Music music;
+
 
     std::string saveLoadMSG;
     Stats stats;

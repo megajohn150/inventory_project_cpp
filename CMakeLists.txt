@@ -17,6 +17,8 @@ add_executable(inventory src/main.cpp
     src/equipment.h src/equipment.cpp
     src/displaylist.h src/displaylist.cpp
     src/music.h src/music.cpp
+
+
 )
 target_include_directories(inventory PRIVATE include)
 

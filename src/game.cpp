@@ -90,6 +90,8 @@ bool Game::saveGame(const std::string& filename) {
     j["player"]["name"]  = player->getName();
     j["player"]["money"] = player->getMoney();
     j["player"]["hp"]    = player->getHp();
+    j["player"]["lvl"]   = player->getLvl();
+    j["player"]["exp"]   = player->getExp();
     // Backpacks
     j["player"]["hasSmallBackpack"] = player->getInv()->getHasSmallBackpack();
     j["player"]["hasLargeBackpack"] = player->getInv()->getHasLargeBackpack();
@@ -163,6 +165,8 @@ bool Game::loadGame(const std::string& filename){
     player->setName(j["player"]["name"]);
     player->setMoney(j["player"]["money"]);
     player->setHp(j["player"]["hp"]);
+    if (j["player"].contains("lvl")) player->setLvl(j["player"]["lvl"].get<int>());
+    if (j["player"].contains("exp")) player->setExp(j["player"]["exp"].get<int>());
     // Clear current state
     player->getInv()->clearInv(player->getEquip());
     // Restore backpacks
@@ -809,8 +813,8 @@ bool Game::state_play() {
     }
 
     int earned = std::max(1, int(
-        baseEarnByName(activeWeapon->getName()) * rarityMultiplier(activeWeapon->getRarity())
-        ));
+                                 baseEarnByName(activeWeapon->getName()) * rarityMultiplier(activeWeapon->getRarity())
+                                 ));
 
     int roll = Random::range(1, 100);
     if (roll <= 3) {
@@ -854,6 +858,7 @@ bool Game::state_play() {
             stats.zombiesKilled++;
             player->setMoney(player->getMoney() + earned);
             stats.coinsEarned += earned;
+            player->levelUp(3, 8);
             lastEvent = ">> Zombie attacked! Your equipment scared him off. You earned: "
                         + std::to_string(earned) + "!"
                         + (armorBroke ? " Your armor broke!" : "");
@@ -869,7 +874,7 @@ bool Game::state_play() {
         }
     } else {
         lastEvent = ">> You earned +" + std::to_string(earned) + " coins!";
-        player->levelUp(50,150);
+        player->levelUp(1, 5);
         player->setMoney(player->getMoney() + earned);
         stats.coinsEarned += earned;
     }
@@ -986,6 +991,7 @@ bool Game::state_play_medkit() {
             player->getInv()->removeItem(medList[medCursor].invRow, medList[medCursor].invCol);
             stats.medkitsUsed++;
             stats.hpHealed += healedAmount;
+            player->levelUp(2, 6);
             lastEvent = Color::GREEN + "Used " + usedMedkitName
                         + "! HP: " + std::to_string(player->getHp()) + "/100" + Color::RESET;
             medCursor = 0;
@@ -1048,6 +1054,7 @@ bool Game::state_boss() {
 
         stats.coinsEarned += coinsWon;
         stats.bossFightsWon++;
+        player->levelUp(150, 300);
         lastEvent = Color::YELLOW + Color::BOLD + "BOSS defeated! You earned +"
                     + std::to_string(coinsWon) + " coins!" + Color::RESET;
 
@@ -1152,8 +1159,8 @@ bool Game::state_inventory() {
         std::cout << "╠═══════════════════════════╣\n";
         std::cout << "║"<<repeat(" ", balanceLeft)<< r <<"Balance: "<< y << b << player->getMoney()<<repeat(" ", balanceRight)<<r<<c<<b<< "║\n";
         std::cout << r << c <<b<<"║" << repeat(" ", levelLeft) << r <<
-                "Level: " << b << y << player->getLvl() << r << " (" <<
-                Color::WHITE << player->getExp() << r << "/100)"
+            "Level: " << b << y << player->getLvl() << r << " (" <<
+            Color::WHITE << player->getExp() << r << "/100)"
                   << repeat(" ", levelRight) << c << b <<"║\n";
         std::cout << "║"<<repeat(" ", hpLeft)<< r <<"HP: "<< hpColor(player->getHp())  << b<< player->getHp() << repeat(" ", hpRight)<< r << c <<b <<"║\n";
         std::cout << "╚═══════════════════════════╝\n" << r;
@@ -1203,8 +1210,8 @@ bool Game::state_inventory() {
 
     if (repairPending) {
         Item* item = !equipMode
-            ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
-            : player->getEquip()->getSelectedItem();
+                         ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
+                         : player->getEquip()->getSelectedItem();
         if (item) {
             std::cout << Color::DARKGRAY << " ───────────────────────────\n" <<Color::RESET;
             std::cout << " Repair: " << item->getName()
@@ -1222,8 +1229,8 @@ bool Game::state_inventory() {
 
     if (upgradePending) {
         Item* item = !equipMode
-            ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
-            : player->getEquip()->getSelectedItem();
+                         ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
+                         : player->getEquip()->getSelectedItem();
         if (item) {
             std::cout << Color::DARKGRAY << " ───────────────────────────\n" <<Color::RESET;
             std::cout << " UPGRADE: " << item->getName()
@@ -1675,13 +1682,14 @@ bool Game::state_inventory() {
         medkitMsg     = "";
         showStats     = false;
         Item* item = !equipMode
-            ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
-            : player->getEquip()->getSelectedItem();
+                         ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
+                         : player->getEquip()->getSelectedItem();
         if (upgradePending) {
             if (player->getMoney() >= upgradeCost && item) {
                 player->setMoney(player->getMoney() - upgradeCost);
                 item->upgradeType();
                 stats.upgrades++;
+                player->levelUp(8, 20);
                 system(CLEAR);
                 getSingleChar();
             }
@@ -1710,12 +1718,13 @@ bool Game::state_inventory() {
         medkitMsg      = "";
         showStats      = false;
         Item* item = !equipMode
-            ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
-            : player->getEquip()->getSelectedItem();
+                         ? player->getInv()->getItemOnSelectedRC(player->getInv()->getCurrentRow(), player->getInv()->getCurrentCol())
+                         : player->getEquip()->getSelectedItem();
         if (repairPending) {
             if (player->getMoney() >= repairCost && item) {
                 player->setMoney(player->getMoney() - repairCost);
                 stats.repairs++;
+                player->levelUp(5, 15);
                 system(CLEAR);
                 std::cout << "Successfully repaired " << item->getName()
                           << " durability from " << item->getDurability() << " to " << repairTarget << "!";
@@ -1779,6 +1788,7 @@ bool Game::state_inventory() {
                             );
                         stats.medkitsUsed++;
                         stats.hpHealed += actualHeal;
+                        player->levelUp(2, 6);
                         medkitMsg = Color::GREEN + "Healed! HP: "
                                     + std::to_string(player->getHp()) + "/100" + Color::RESET;
                     }
@@ -1838,6 +1848,7 @@ bool Game::state_store_shop() {
             } else {
                 player->setMoney(player->getMoney() - price);
                 stats.itemsBought++;
+                player->levelUp(5, 12);
                 system(CLEAR);
                 src->setStock(0);
                 std::cout << "Small backpack bought! +1 inventory column.";
@@ -1852,6 +1863,7 @@ bool Game::state_store_shop() {
             } else {
                 player->setMoney(player->getMoney() - price);
                 stats.itemsBought++;
+                player->levelUp(5, 12);
                 system(CLEAR);
                 src->setStock(0);
                 std::cout << "Big backpack bought! +2 inventory columns.";
@@ -1864,6 +1876,7 @@ bool Game::state_store_shop() {
         if (player->getInv()->addItem(newItem)) {
             player->setMoney(player->getMoney() - price);
             stats.itemsBought++;
+            player->levelUp(2, 8);
             src->setStock(src->getStock() - 1);
             system(CLEAR);
             std::cout << "Successfully bought " << src->getName();
@@ -2005,6 +2018,7 @@ bool Game::state_store_sell() {
                 player->getInv()->removeItem(entry.invRow, entry.invCol);
             }
             stats.itemsSold++;
+            player->levelUp(3, 10);
             sellPending = false;
             sellCursor  = 0;
         } else {

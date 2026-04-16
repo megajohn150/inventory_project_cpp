@@ -140,10 +140,13 @@ void Music::display(){
 
     std::string color;
     if(volume == 0){
-        color = Color::GRAY;
+        color = Color::GRAY+"  ";
+    }
+    else if(volume == 100){
+        color = Color::YELLOW + Color::BOLD;
     }
     else{
-        color = Color::YELLOW;
+        color = Color::YELLOW+" ";
     }
 
     std::cout << Color::RESET << Color::GRAY

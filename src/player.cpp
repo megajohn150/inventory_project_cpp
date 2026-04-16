@@ -1,5 +1,5 @@
 #include "player.h"
-
+#include "random.h"
 std::string Player::getDiff() const
 {
     return diff;
@@ -10,10 +10,32 @@ void Player::setDiff(const std::string &newDiff)
     diff = newDiff;
 }
 
+int Player::getExp() const
+{
+    return exp;
+}
+
+void Player::setExp(int newExp)
+{
+    exp = newExp;
+}
+
+int Player::getLvl() const
+{
+    return lvl;
+}
+
+void Player::setLvl(int newLvl)
+{
+    lvl = newLvl;
+}
+
 Player::Player()
 {
     this->name = "John";
     this->money = 0;
+    this->exp = 0;
+    this->lvl = 1;
     this->hp = 100;
     this->inv = new Inventory();
     this->equip = new Equipment();
@@ -25,6 +47,17 @@ Player::~Player()
 {
     delete inv;
     delete equip;
+}
+
+void Player::levelUp(int min, int max)
+{
+    int value = Random::range(min, max);
+    this->exp += value;
+
+    while (this->exp >= 100) {
+        this->lvl++;
+        this->exp -= 100;
+    }
 }
 
 bool Player::equipFromInventory(int row, int col)

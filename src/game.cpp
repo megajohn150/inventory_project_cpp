@@ -869,6 +869,7 @@ bool Game::state_play() {
         }
     } else {
         lastEvent = ">> You earned +" + std::to_string(earned) + " coins!";
+        player->levelUp(50,150);
         player->setMoney(player->getMoney() + earned);
         stats.coinsEarned += earned;
     }
@@ -1130,20 +1131,30 @@ bool Game::state_inventory() {
 
         std::string balance = "Balance: " + std::to_string(player->getMoney());
         std::string hp = "HP: " + std::to_string(player->getHp());
+        std::string level = "Level: " + std::to_string(player->getLvl()) + " (" +std::to_string(player->getExp()) + "/100)";
 
         int total = 27;
         int freeBalance = total - balance.length();
         int freeHp = total - hp.length();
+        int freeLevel = total - level.length();
 
         int balanceLeft = freeBalance / 2;
         int balanceRight = freeBalance - balanceLeft;
+
+        int levelLeft = freeLevel / 2;
+        int levelRight = freeLevel - levelLeft;
 
         int hpLeft = freeHp / 2;
         int hpRight = freeHp - hpLeft;
 
         std::cout << r << c << b <<"╔═══════════════════════════╗\n";
         std::cout << "║         "<< r << b <<"INVENTORY" << r << c << b <<"         ║\n";
+        std::cout << "╠═══════════════════════════╣\n";
         std::cout << "║"<<repeat(" ", balanceLeft)<< r <<"Balance: "<< y << b << player->getMoney()<<repeat(" ", balanceRight)<<r<<c<<b<< "║\n";
+        std::cout << r << c <<b<<"║" << repeat(" ", levelLeft) << r <<
+                "Level: " << b << y << player->getLvl() << r << " (" <<
+                Color::WHITE << player->getExp() << r << "/100)"
+                  << repeat(" ", levelRight) << c << b <<"║\n";
         std::cout << "║"<<repeat(" ", hpLeft)<< r <<"HP: "<< hpColor(player->getHp())  << b<< player->getHp() << repeat(" ", hpRight)<< r << c <<b <<"║\n";
         std::cout << "╚═══════════════════════════╝\n" << r;
 
@@ -1320,7 +1331,9 @@ bool Game::state_inventory() {
         showStats      = false;
         equipMode      = !equipMode;
         break;
-
+    case 'n': // for testing
+        player->levelUp(20,50);
+        break;
     case 'a':
         repairPending  = false;
         upgradePending = false;

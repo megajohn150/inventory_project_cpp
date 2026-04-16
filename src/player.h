@@ -10,6 +10,8 @@ private:
     std::string name;
     int money;
     int hp;
+    int exp;
+    int lvl;
     Inventory* inv;
     Equipment* equip;
     std::string diff;
@@ -18,6 +20,7 @@ public:
     Player();
     ~Player();
 
+    void levelUp(int min, int max);
 
     bool equipFromInventory(int row, int col);
 
@@ -35,6 +38,10 @@ public:
     Equipment* getEquip() const;
     std::string getDiff() const;
     void setDiff(const std::string &newDiff);
+    int getExp() const;
+    void setExp(int newExp);
+    int getLvl() const;
+    void setLvl(int newLvl);
 };
 
 #endif // PLAYER_H
